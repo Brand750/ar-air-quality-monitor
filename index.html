@@ -48,6 +48,17 @@
             display: inline-block;
             margin-right: 10px;
         }
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -75,14 +86,20 @@
         </div>
     </div>
 
+    <div class="debug-info">
+        <div>Camera: <span id="camera-status">Loading...</span></div>
+        <div>Marker: <span id="marker-status">Not detected</span></div>
+    </div>
+
     <a-scene 
         vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false;" 
-        renderer="logarithmicDepthBuffer: true;"
+        arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" 
+        renderer="logarithmicDepthBuffer: true; antialias: true;"
         embedded
         gesture-detector>
 
-        <a-marker preset='hiro'>
+        <!-- Try multiple marker types for better compatibility -->
+        <a-marker preset='hiro' id='hiro-marker'>
             <!-- Main Display Panel -->
             <a-box 
                 id="main-panel"
@@ -124,7 +141,7 @@
                 width="6">
             </a-text>
             
-            <!-- PM1.0 Reading -->
+            <!-- PM Readings -->
             <a-text 
                 id="pm1-text"
                 value="PM1.0: 12 μg/m³" 
@@ -135,7 +152,6 @@
                 width="4">
             </a-text>
             
-            <!-- PM2.5 Reading -->
             <a-text 
                 id="pm25-text"
                 value="PM2.5: 25 μg/m³" 
@@ -146,7 +162,6 @@
                 width="4">
             </a-text>
             
-            <!-- PM10 Reading -->
             <a-text 
                 id="pm10-text"
                 value="PM10: 35 μg/m³" 
@@ -157,7 +172,17 @@
                 width="4">
             </a-text>
             
-            <!-- Floating Particles Animation -->
+            <!-- Simple test cube to verify marker detection -->
+            <a-box 
+                position="0 1.5 0" 
+                width="0.2" 
+                height="0.2" 
+                depth="0.2" 
+                color="#FF0000"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 2000">
+            </a-box>
+            
+            <!-- Floating Particles -->
             <a-sphere 
                 id="particle1"
                 position="0.3 0.2 0.2" 
@@ -191,6 +216,27 @@
     </a-scene>
 
     <script>
+        // Debug marker detection
+        document.querySelector('a-marker').addEventListener('markerFound', function() {
+            document.getElementById('marker-status').textContent = 'Detected!';
+            console.log('Hiro marker found!');
+        });
+
+        document.querySelector('a-marker').addEventListener('markerLost', function() {
+            document.getElementById('marker-status').textContent = 'Lost';
+            console.log('Hiro marker lost');
+        });
+
+        // Check camera status
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(function(stream) {
+                document.getElementById('camera-status').textContent = 'Active';
+                stream.getTracks().forEach(track => track.stop());
+            })
+            .catch(function(err) {
+                document.getElementById('camera-status').textContent = 'Error: ' + err.message;
+            });
+
         // Air quality categories based on PM2.5 levels (WHO/EPA standards)
         const airQualityLevels = {
             good: { max: 12, color: '#4CAF50', text: 'Good' },
@@ -211,27 +257,30 @@
         }
 
         function updateARDisplay() {
-            // Get sensor values
             const pm1 = document.getElementById('pm1').value;
             const pm25 = document.getElementById('pm25').value;
             const pm10 = document.getElementById('pm10').value;
             
-            // Determine air quality status based on PM2.5
             const status = getAirQualityStatus(parseFloat(pm25));
             
             // Update AR display elements
-            document.getElementById('pm1-text').setAttribute('value', `PM1.0: ${pm1} μg/m³`);
-            document.getElementById('pm25-text').setAttribute('value', `PM2.5: ${pm25} μg/m³`);
-            document.getElementById('pm10-text').setAttribute('value', `PM10: ${pm10} μg/m³`);
-            document.getElementById('status-text-ar').setAttribute('value', status.text);
-            document.getElementById('status-circle').setAttribute('color', status.color);
+            const pm1Text = document.getElementById('pm1-text');
+            const pm25Text = document.getElementById('pm25-text');
+            const pm10Text = document.getElementById('pm10-text');
+            const statusTextAr = document.getElementById('status-text-ar');
+            const statusCircle = document.getElementById('status-circle');
+            const mainPanel = document.getElementById('main-panel');
+            
+            if (pm1Text) pm1Text.setAttribute('value', `PM1.0: ${pm1} μg/m³`);
+            if (pm25Text) pm25Text.setAttribute('value', `PM2.5: ${pm25} μg/m³`);
+            if (pm10Text) pm10Text.setAttribute('value', `PM10: ${pm10} μg/m³`);
+            if (statusTextAr) statusTextAr.setAttribute('value', status.text);
+            if (statusCircle) statusCircle.setAttribute('color', status.color);
+            if (mainPanel) mainPanel.setAttribute('color', status.color);
             
             // Update control panel status
             document.getElementById('status-color').style.backgroundColor = status.color;
             document.getElementById('status-text').textContent = status.text;
-            
-            // Update main panel color based on status
-            document.getElementById('main-panel').setAttribute('color', status.color);
             
             // Animate particles based on air quality
             updateParticleAnimation(status);
@@ -243,49 +292,45 @@
                             status.text === 'Moderate' ? 0.5 : 
                             status.text.includes('Unhealthy') ? 0.8 : 1.0;
             
-            particles.forEach((particleId, index) => {
+            particles.forEach((particleId) => {
                 const particle = document.getElementById(particleId);
-                particle.setAttribute('opacity', intensity);
-                
-                // More particles for worse air quality
-                if (intensity > 0.7) {
-                    particle.setAttribute('radius', 0.05);
-                } else if (intensity > 0.5) {
-                    particle.setAttribute('radius', 0.04);
-                } else {
-                    particle.setAttribute('radius', 0.03);
+                if (particle) {
+                    particle.setAttribute('opacity', intensity);
+                    
+                    if (intensity > 0.7) {
+                        particle.setAttribute('radius', 0.05);
+                    } else if (intensity > 0.5) {
+                        particle.setAttribute('radius', 0.04);
+                    } else {
+                        particle.setAttribute('radius', 0.03);
+                    }
                 }
             });
         }
 
-        // Simulate real-time data updates (you can replace this with actual sensor data)
-        function simulateRealtimeData() {
-            // This is where you'd integrate with your actual sensor
-            // For now, we'll just add some random variation
+        // Initialize display
+        setTimeout(updateARDisplay, 1000);
+        
+        // Handle input changes
+        document.getElementById('pm1').addEventListener('input', updateARDisplay);
+        document.getElementById('pm25').addEventListener('input', updateARDisplay);
+        document.getElementById('pm10').addEventListener('input', updateARDisplay);
+
+        // Auto-update every 5 seconds
+        setInterval(() => {
+            // Simulate sensor data variation
             const baseValues = {
                 pm1: parseFloat(document.getElementById('pm1').value),
                 pm25: parseFloat(document.getElementById('pm25').value),
                 pm10: parseFloat(document.getElementById('pm10').value)
             };
             
-            // Add small random variations (±5)
             document.getElementById('pm1').value = Math.max(0, baseValues.pm1 + (Math.random() - 0.5) * 10).toFixed(0);
             document.getElementById('pm25').value = Math.max(0, baseValues.pm25 + (Math.random() - 0.5) * 10).toFixed(0);
             document.getElementById('pm10').value = Math.max(0, baseValues.pm10 + (Math.random() - 0.5) * 10).toFixed(0);
             
             updateARDisplay();
-        }
-
-        // Initialize display
-        updateARDisplay();
-        
-        // Auto-update every 5 seconds (optional)
-        setInterval(simulateRealtimeData, 5000);
-
-        // Handle input changes
-        document.getElementById('pm1').addEventListener('input', updateARDisplay);
-        document.getElementById('pm25').addEventListener('input', updateARDisplay);
-        document.getElementById('pm10').addEventListener('input', updateARDisplay);
+        }, 5000);
     </script>
 </body>
 </html>
