@@ -232,168 +232,204 @@
 
     <script>
         let markerVisible = false;
-        let elementsCreated = false;
+let elementsCreated = false;
 
-        // Enhanced marker detection with better logging
-        document.querySelector('a-marker').addEventListener('markerFound', function() {
-            markerVisible = true;
-            document.getElementById('marker-status').textContent = 'Detected!';
-            document.getElementById('objects-status').textContent = 'Visible';
-            console.log('Hiro marker found! Elements should be visible now.');
-            
-            // Force update display when marker is found
-            setTimeout(updateARDisplay, 100);
-        });
+// Enhanced marker detection with better logging
+document.querySelector('a-marker').addEventListener('markerFound', function() {
+    markerVisible = true;
+    document.getElementById('marker-status').textContent = 'Detected!';
+    document.getElementById('objects-status').textContent = 'Visible';
+    console.log('Hiro marker found! Elements should be visible now.');
+    
+    // Force update display when marker is found
+    setTimeout(updateARDisplay, 100);
+});
 
-        document.querySelector('a-marker').addEventListener('markerLost', function() {
-            markerVisible = false;
-            document.getElementById('marker-status').textContent = 'Lost';
-            document.getElementById('objects-status').textContent = 'Hidden';
-            console.log('Hiro marker lost');
-        });
+document.querySelector('a-marker').addEventListener('markerLost', function() {
+    markerVisible = false;
+    document.getElementById('marker-status').textContent = 'Lost';
+    document.getElementById('objects-status').textContent = 'Hidden';
+    console.log('Hiro marker lost');
+});
 
-        // Check camera status with better error handling
-        navigator.mediaDevices.getUserMedia({video: true})
-            .then(function(stream) {
-                document.getElementById('camera-status').textContent = 'Active';
-                console.log('Camera initialized successfully');
-                stream.getTracks().forEach(track => track.stop());
-            })
-            .catch(function(err) {
-                document.getElementById('camera-status').textContent = 'Error: ' + err.message;
-                console.error('Camera error:', err);
-            });
+// Check camera status with better error handling
+navigator.mediaDevices.getUserMedia({video: true})
+    .then(function(stream) {
+        document.getElementById('camera-status').textContent = 'Active';
+        console.log('Camera initialized successfully');
+        stream.getTracks().forEach(track => track.stop());
+    })
+    .catch(function(err) {
+        document.getElementById('camera-status').textContent = 'Error: ' + err.message;
+        console.error('Camera error:', err);
+    });
 
-        // Air quality categories based on PM2.5 levels (WHO/EPA standards)
-        const airQualityLevels = {
-            good: { max: 12, color: '#4CAF50', text: 'Good' },
-            moderate: { max: 35, color: '#FFEB3B', text: 'Moderate' },
-            unhealthySensitive: { max: 55, color: '#FF9800', text: 'Unhealthy for Sensitive' },
-            unhealthy: { max: 150, color: '#F44336', text: 'Unhealthy' },
-            veryUnhealthy: { max: 250, color: '#9C27B0', text: 'Very Unhealthy' },
-            hazardous: { max: 999, color: '#795548', text: 'Hazardous' }
-        };
+// Air quality categories based on PM2.5 levels (WHO/EPA standards)
+const airQualityLevels = {
+    good: { max: 12, color: '#4CAF50', text: 'Healthy' },
+    moderate: { max: 35, color: '#FFEB3B', text: 'Moderate' },
+    unhealthySensitive: { max: 55, color: '#FF9800', text: 'Unhealthy for Sensitive' },
+    unhealthy: { max: 150, color: '#F44336', text: 'Unhealthy' },
+    veryUnhealthy: { max: 250, color: '#9C27B0', text: 'Very Unhealthy' },
+    hazardous: { max: 999, color: '#795548', text: 'Hazardous' }
+};
 
-        function getAirQualityStatus(pm25) {
-            for (let level in airQualityLevels) {
-                if (pm25 <= airQualityLevels[level].max) {
-                    return airQualityLevels[level];
-                }
-            }
-            return airQualityLevels.hazardous;
+function getAirQualityStatus(pm25) {
+    for (let level in airQualityLevels) {
+        if (pm25 <= airQualityLevels[level].max) {
+            return airQualityLevels[level];
         }
+    }
+    return airQualityLevels.hazardous;
+}
 
-        function updateARDisplay() {
-            const pm1 = document.getElementById('pm1').value;
-            const pm25 = document.getElementById('pm25').value;
-            const pm10 = document.getElementById('pm10').value;
+function updateARDisplay() {
+    const pm1 = document.getElementById('pm1').value;
+    const pm25 = document.getElementById('pm25').value;
+    const pm10 = document.getElementById('pm10').value;
+    
+    const status = getAirQualityStatus(parseFloat(pm25));
+    
+    console.log('Updating AR display:', { pm1, pm25, pm10, status: status.text });
+    
+    // Update AR display elements with error checking and stable positioning
+    const elements = {
+        pm1Text: document.getElementById('pm1-text'),
+        pm25Text: document.getElementById('pm25-text'),
+        pm10Text: document.getElementById('pm10-text'),
+        statusTextAr: document.getElementById('status-text-ar'),
+        statusCircle: document.getElementById('status-circle'),
+        mainPanel: document.getElementById('main-panel')
+    };
+    
+    // Check if elements exist before updating with stable text values
+    if (elements.pm1Text) {
+        elements.pm1Text.setAttribute('value', `PM1.0: ${pm1} μg/m³`);
+        // Stabilize text positioning
+        elements.pm1Text.setAttribute('position', '-0.3 0.003 0.02');
+        elements.pm1Text.setAttribute('anchor', 'left');
+        elements.pm1Text.setAttribute('baseline', 'center');
+    }
+    if (elements.pm25Text) {
+        elements.pm25Text.setAttribute('value', `PM2.5: ${pm25} μg/m³`);
+        elements.pm25Text.setAttribute('position', '-0.3 0.003 -0.05');
+        elements.pm25Text.setAttribute('anchor', 'left');
+        elements.pm25Text.setAttribute('baseline', 'center');
+    }
+    if (elements.pm10Text) {
+        elements.pm10Text.setAttribute('value', `PM10: ${pm10} μg/m³`);
+        elements.pm10Text.setAttribute('position', '-0.3 0.003 -0.12');
+        elements.pm10Text.setAttribute('anchor', 'left');
+        elements.pm10Text.setAttribute('baseline', 'center');
+    }
+    if (elements.statusTextAr) {
+        elements.statusTextAr.setAttribute('value', status.text);
+        elements.statusTextAr.setAttribute('position', '0 0.003 0.08');
+        elements.statusTextAr.setAttribute('anchor', 'center');
+        elements.statusTextAr.setAttribute('baseline', 'center');
+    }
+    if (elements.statusCircle) {
+        elements.statusCircle.setAttribute('color', status.color);
+        elements.statusCircle.setAttribute('position', '0 0.003 0.15');
+    }
+    if (elements.mainPanel) {
+        elements.mainPanel.setAttribute('color', status.color);
+        elements.mainPanel.setAttribute('position', '0 0 0.001');
+    }
+    
+    // Update control panel status
+    document.getElementById('status-color').style.backgroundColor = status.color;
+    document.getElementById('status-text').textContent = status.text;
+    
+    // Animate particles based on air quality
+    updateParticleAnimation(status);
+}
+
+function updateParticleAnimation(status) {
+    const particles = ['particle1', 'particle2', 'particle3'];
+    const intensity = status.text === 'Healthy' ? 0.3 : 
+                    status.text === 'Moderate' ? 0.5 : 
+                    status.text.includes('Unhealthy') ? 0.8 : 1.0;
+    
+    particles.forEach((particleId) => {
+        const particle = document.getElementById(particleId);
+        if (particle) {
+            particle.setAttribute('opacity', intensity);
             
-            const status = getAirQualityStatus(parseFloat(pm25));
-            
-            console.log('Updating AR display:', { pm1, pm25, pm10, status: status.text });
-            
-            // Update AR display elements with error checking
-            const elements = {
-                pm1Text: document.getElementById('pm1-text'),
-                pm25Text: document.getElementById('pm25-text'),
-                pm10Text: document.getElementById('pm10-text'),
-                statusTextAr: document.getElementById('status-text-ar'),
-                statusCircle: document.getElementById('status-circle'),
-                mainPanel: document.getElementById('main-panel')
-            };
-            
-            // Check if elements exist before updating
-            if (elements.pm1Text) {
-                elements.pm1Text.setAttribute('value', `PM1.0: ${pm1} μg/m³`);
+            // Adjust particle size based on air quality
+            let radius;
+            if (intensity > 0.7) {
+                radius = 0.025;
+            } else if (intensity > 0.5) {
+                radius = 0.02;
+            } else {
+                radius = 0.015;
             }
-            if (elements.pm25Text) {
-                elements.pm25Text.setAttribute('value', `PM2.5: ${pm25} μg/m³`);
-            }
-            if (elements.pm10Text) {
-                elements.pm10Text.setAttribute('value', `PM10: ${pm10} μg/m³`);
-            }
-            if (elements.statusTextAr) {
-                elements.statusTextAr.setAttribute('value', status.text);
-            }
-            if (elements.statusCircle) {
-                elements.statusCircle.setAttribute('color', status.color);
-            }
-            if (elements.mainPanel) {
-                elements.mainPanel.setAttribute('color', status.color);
-            }
-            
-            // Update control panel status
-            document.getElementById('status-color').style.backgroundColor = status.color;
-            document.getElementById('status-text').textContent = status.text;
-            
-            // Animate particles based on air quality
-            updateParticleAnimation(status);
+            particle.setAttribute('radius', radius);
         }
+    });
+}
 
-        function updateParticleAnimation(status) {
-            const particles = ['particle1', 'particle2', 'particle3'];
-            const intensity = status.text === 'Good' ? 0.3 : 
-                            status.text === 'Moderate' ? 0.5 : 
-                            status.text.includes('Unhealthy') ? 0.8 : 1.0;
-            
-            particles.forEach((particleId) => {
-                const particle = document.getElementById(particleId);
-                if (particle) {
-                    particle.setAttribute('opacity', intensity);
-                    
-                    // Adjust particle size based on air quality
-                    let radius;
-                    if (intensity > 0.7) {
-                        radius = 0.025;
-                    } else if (intensity > 0.5) {
-                        radius = 0.02;
-                    } else {
-                        radius = 0.015;
-                    }
-                    particle.setAttribute('radius', radius);
-                }
-            });
+// Wait for scene to load before initializing
+document.querySelector('a-scene').addEventListener('loaded', function() {
+    console.log('A-Frame scene loaded');
+    
+    // Ensure text elements are properly configured for stability
+    const textElements = [
+        { id: 'pm1-text', pos: '-0.3 0.003 0.02' },
+        { id: 'pm25-text', pos: '-0.3 0.003 -0.05' },
+        { id: 'pm10-text', pos: '-0.3 0.003 -0.12' },
+        { id: 'status-text-ar', pos: '0 0.003 0.08' }
+    ];
+    
+    textElements.forEach(elem => {
+        const element = document.getElementById(elem.id);
+        if (element) {
+            // Set stable text properties to prevent jittering
+            element.setAttribute('look-controls-enabled', 'false');
+            element.setAttribute('wasd-controls-enabled', 'false');
+            element.setAttribute('position', elem.pos);
+            element.setAttribute('geometry', 'primitive: plane');
+            element.setAttribute('material', 'transparent: true; opacity: 0');
         }
+    });
+    
+    setTimeout(updateARDisplay, 1000);
+    elementsCreated = true;
+});
 
-        // Wait for scene to load before initializing
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            console.log('A-Frame scene loaded');
-            setTimeout(updateARDisplay, 1000);
-            elementsCreated = true;
-        });
-        
-        // Handle input changes
-        document.getElementById('pm1').addEventListener('input', updateARDisplay);
-        document.getElementById('pm25').addEventListener('input', updateARDisplay);
-        document.getElementById('pm10').addEventListener('input', updateARDisplay);
+// Handle input changes
+document.getElementById('pm1').addEventListener('input', updateARDisplay);
+document.getElementById('pm25').addEventListener('input', updateARDisplay);
+document.getElementById('pm10').addEventListener('input', updateARDisplay);
 
-        // Auto-update every 5 seconds with realistic sensor variation
-        setInterval(() => {
-            const baseValues = {
-                pm1: parseFloat(document.getElementById('pm1').value),
-                pm25: parseFloat(document.getElementById('pm25').value),
-                pm10: parseFloat(document.getElementById('pm10').value)
-            };
-            
-            // Smaller, more realistic variations
-            const variation = 5; // ±5 μg/m³ variation
-            document.getElementById('pm1').value = Math.max(0, Math.round(baseValues.pm1 + (Math.random() - 0.5) * variation));
-            document.getElementById('pm25').value = Math.max(0, Math.round(baseValues.pm25 + (Math.random() - 0.5) * variation));
-            document.getElementById('pm10').value = Math.max(0, Math.round(baseValues.pm10 + (Math.random() - 0.5) * variation));
-            
-            updateARDisplay();
-        }, 5000);
+// Auto-update every 5 seconds with realistic sensor variation
+setInterval(() => {
+    const baseValues = {
+        pm1: parseFloat(document.getElementById('pm1').value),
+        pm25: parseFloat(document.getElementById('pm25').value),
+        pm10: parseFloat(document.getElementById('pm10').value)
+    };
+    
+    // Smaller, more realistic variations
+    const variation = 5; // ±5 μg/m³ variation
+    document.getElementById('pm1').value = Math.max(0, Math.round(baseValues.pm1 + (Math.random() - 0.5) * variation));
+    document.getElementById('pm25').value = Math.max(0, Math.round(baseValues.pm25 + (Math.random() - 0.5) * variation));
+    document.getElementById('pm10').value = Math.max(0, Math.round(baseValues.pm10 + (Math.random() - 0.5) * variation));
+    
+    updateARDisplay();
+}, 5000);
 
-        // Debug helper - log marker position info
-        setInterval(() => {
-            if (markerVisible) {
-                const marker = document.querySelector('a-marker');
-                if (marker && marker.object3D) {
-                    console.log('Marker position:', marker.object3D.position);
-                    console.log('Marker visible:', marker.object3D.visible);
-                }
-            }
-        }, 10000);
+// Debug helper - log marker position info
+setInterval(() => {
+    if (markerVisible) {
+        const marker = document.querySelector('a-marker');
+        if (marker && marker.object3D) {
+            console.log('Marker position:', marker.object3D.position);
+            console.log('Marker visible:', marker.object3D.visible);
+        }
+    }
+}, 10000);
     </script>
 </body>
 </html>
