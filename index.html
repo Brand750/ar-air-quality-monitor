@@ -76,19 +76,19 @@
     </div>
 
     <a-scene 
-    vr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;"
-    embedded
-    gesture-detector>
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false;" 
+        renderer="logarithmicDepthBuffer: true;"
+        embedded
+        gesture-detector>
 
-    <a-marker preset='hiro'> </a-marker>
-        
+        <a-marker preset='hiro'>
             <!-- Main Display Panel -->
             <a-box 
                 id="main-panel"
                 position="0 0.5 0" 
-                width="2" 
-                height="1.5" 
+                width="1.5" 
+                height="1.2" 
                 depth="0.1" 
                 color="#2196F3"
                 opacity="0.9">
@@ -97,18 +97,18 @@
             <!-- Title -->
             <a-text 
                 value="Air Quality Monitor" 
-                position="0 1.1 0.06" 
+                position="0 0.9 0.06" 
                 align="center" 
                 color="white" 
                 font="roboto"
-                width="8">
+                width="6">
             </a-text>
             
             <!-- Status Circle -->
             <a-circle 
                 id="status-circle"
-                position="0 0.7 0.06" 
-                radius="0.25" 
+                position="0 0.6 0.06" 
+                radius="0.15" 
                 color="#4CAF50"
                 opacity="0.8">
             </a-circle>
@@ -117,74 +117,73 @@
             <a-text 
                 id="status-text-ar"
                 value="Good" 
-                position="0 0.4 0.06" 
+                position="0 0.35 0.06" 
                 align="center" 
                 color="white" 
                 font="roboto"
-                width="10">
+                width="6">
             </a-text>
             
             <!-- PM1.0 Reading -->
             <a-text 
                 id="pm1-text"
                 value="PM1.0: 12 μg/m³" 
-                position="-0.7 0.1 0.06" 
+                position="-0.6 0.1 0.06" 
                 align="left" 
                 color="white" 
                 font="roboto"
-                width="6">
+                width="4">
             </a-text>
             
             <!-- PM2.5 Reading -->
             <a-text 
                 id="pm25-text"
                 value="PM2.5: 25 μg/m³" 
-                position="-0.7 -0.1 0.06" 
+                position="-0.6 -0.05 0.06" 
                 align="left" 
                 color="white" 
                 font="roboto"
-                width="6">
+                width="4">
             </a-text>
             
             <!-- PM10 Reading -->
             <a-text 
                 id="pm10-text"
                 value="PM10: 35 μg/m³" 
-                position="-0.7 -0.3 0.06" 
+                position="-0.6 -0.2 0.06" 
                 align="left" 
                 color="white" 
                 font="roboto"
-                width="6">
+                width="4">
             </a-text>
             
             <!-- Floating Particles Animation -->
             <a-sphere 
                 id="particle1"
-                position="0.5 0.2 0.2" 
-                radius="0.05" 
+                position="0.3 0.2 0.2" 
+                radius="0.03" 
                 color="#FF5722"
                 opacity="0.7"
-                animation="property: position; to: 0.5 0.8 0.2; dur: 2000; easing: easeInOutQuad; loop: true; dir: alternate">
+                animation="property: position; to: 0.3 0.6 0.2; dur: 2000; easing: easeInOutQuad; loop: true; dir: alternate">
             </a-sphere>
             
             <a-sphere 
                 id="particle2"
-                position="-0.3 0.6 0.15" 
-                radius="0.03" 
+                position="-0.2 0.5 0.15" 
+                radius="0.02" 
                 color="#FF9800"
                 opacity="0.6"
-                animation="property: position; to: -0.3 0.2 0.15; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate">
+                animation="property: position; to: -0.2 0.3 0.15; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate">
             </a-sphere>
             
             <a-sphere 
                 id="particle3"
-                position="0.2 0.8 0.25" 
-                radius="0.04" 
+                position="0.1 0.7 0.25" 
+                radius="0.025" 
                 color="#FFC107"
                 opacity="0.5"
-                animation="property: position; to: 0.2 0.3 0.25; dur: 1800; easing: easeInOutQuad; loop: true; dir: alternate">
+                animation="property: position; to: 0.1 0.4 0.25; dur: 1800; easing: easeInOutQuad; loop: true; dir: alternate">
             </a-sphere>
-            
         </a-marker>
         
         <!-- Camera -->
@@ -250,11 +249,11 @@
                 
                 // More particles for worse air quality
                 if (intensity > 0.7) {
-                    particle.setAttribute('radius', 0.08);
+                    particle.setAttribute('radius', 0.05);
                 } else if (intensity > 0.5) {
-                    particle.setAttribute('radius', 0.06);
-                } else {
                     particle.setAttribute('radius', 0.04);
+                } else {
+                    particle.setAttribute('radius', 0.03);
                 }
             });
         }
