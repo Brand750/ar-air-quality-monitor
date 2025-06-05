@@ -3,50 +3,16 @@
 <head>
     <meta charset="utf-8">
     <title>AR Air Quality Monitor</title>
-    <meta name="description" content="AR Air Quality Monitor">
+    <meta name="description" content="AR Air Quality Monitor with Firebase">
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-        }
-        .controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 1000;
-            max-width: 300px;
-        }
-        .sensor-input {
-            margin: 5px 0;
-            padding: 8px;
-            border: none;
-            border-radius: 5px;
-            width: 100px;
-        }
-        .update-btn {
-            background: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .update-btn:hover {
-            background: #45a049;
-        }
-        .status-indicator {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 10px;
         }
         .debug-info {
             position: fixed;
@@ -62,34 +28,13 @@
     </style>
 </head>
 <body>
-    <div class="controls">
-        <h3>🌬️ Air Quality Sensor</h3>
-        <div>
-            <label>PM1.0: </label>
-            <input type="number" id="pm1" class="sensor-input" value="12" min="0" max="999">
-            <span>μg/m³</span>
-        </div>
-        <div>
-            <label>PM2.5: </label>
-            <input type="number" id="pm25" class="sensor-input" value="25" min="0" max="999">
-            <span>μg/m³</span>
-        </div>
-        <div>
-            <label>PM10: </label>
-            <input type="number" id="pm10" class="sensor-input" value="35" min="0" max="999">
-            <span>μg/m³</span>
-        </div>
-        <button class="update-btn" onclick="updateARDisplay()">Update AR Display</button>
-        <div id="status-display" style="margin-top: 10px;">
-            <div class="status-indicator" id="status-color"></div>
-            <span id="status-text">Good</span>
-        </div>
-    </div>
+
 
     <div class="debug-info">
         <div>Camera: <span id="camera-status">Loading...</span></div>
         <div>Marker: <span id="marker-status">Not detected</span></div>
         <div>Objects: <span id="objects-status">Ready</span></div>
+        <div>Data: <span id="data-status">Waiting...</span></div>
     </div>
 
     <a-scene 
@@ -115,7 +60,7 @@
 
             <!-- Title -->
             <a-text
-                value="Air Quality"
+                value="Air Quality Monitor"
                 position="0 0.005 -0.35"
                 align="center"
                 color="white"
@@ -127,7 +72,7 @@
             <!-- Status (Bold/Large) -->
             <a-text
                 id="status-text-ar"
-                value="Good"
+                value="Loading..."
                 position="0 0.006 -0.15"
                 align="center"
                 color="white"
@@ -141,7 +86,7 @@
                 id="status-circle"
                 position="0 0.007 0.05"
                 radius="0.05"
-                color="#4CAF50"
+                color="#2196F3"
                 opacity="0.9"
                 rotation="-90 0 0">
             </a-circle>
@@ -149,7 +94,7 @@
             <!-- PM1.0 reading -->
             <a-text
                 id="pm1-text"
-                value="PM1.0: 12 μg/m³"
+                value="PM1.0: -- μg/m³"
                 position="0 0.005 0"
                 align="center"
                 color="white"
@@ -161,7 +106,7 @@
             <!-- PM2.5 reading -->
             <a-text
                 id="pm25-text"
-                value="PM2.5: 25 μg/m³"
+                value="PM2.5: -- μg/m³"
                 position="0 0.005 0.15"
                 align="center"
                 color="white"
@@ -173,7 +118,7 @@
             <!-- PM10 reading -->
             <a-text
                 id="pm10-text"
-                value="PM10: 35 μg/m³"
+                value="PM10: -- μg/m³"
                 position="0 0.005 0.3"
                 align="center"
                 color="white"
@@ -217,16 +162,26 @@
 
     <script>
         let markerVisible = false;
-        let elementsCreated = false;
+        let currentData = { pm1: 0, pm25: 0, pm10: 0 };
+        let firebaseConnected = false;
 
-        // Enhanced marker detection with better logging
+        // Firebase configuration
+        const firebaseConfig = {
+            databaseURL: "https://arairquality-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Enhanced marker detection
         document.querySelector('a-marker').addEventListener('markerFound', function() {
             markerVisible = true;
             document.getElementById('marker-status').textContent = 'Detected!';
             document.getElementById('objects-status').textContent = 'Visible';
             console.log('Hiro marker found! Elements should be visible now.');
             
-            // Force update display when marker is found
+            // Update display when marker is found
             setTimeout(updateARDisplay, 100);
         });
 
@@ -237,7 +192,7 @@
             console.log('Hiro marker lost');
         });
 
-        // Check camera status with better error handling
+        // Check camera status
         navigator.mediaDevices.getUserMedia({video: true})
             .then(function(stream) {
                 document.getElementById('camera-status').textContent = 'Active';
@@ -251,11 +206,12 @@
 
         // Air quality categories based on PM2.5 levels (WHO/EPA standards)
         const airQualityLevels = {
-            good: { max: 12, color: '#4CAF50', text: 'So Good' },
-            healthy: { max: 35, color: '#C1E8F4', text: 'Healthy' },
-            moderate: { max: 55, color: '#FFDE59', text: 'Normal' },
-            unhealthy: { max: 150, color: '#FF9800', text: ' Very Unhealthy' },
-            hazardous: { max: 999, color: '#931883', text: 'Hazardous' }
+            good: { max: 12, color: '#4CAF50', text: 'Good' },
+            healthy: { max: 35, color: '#8BC34A', text: 'Moderate' },
+            moderate: { max: 55, color: '#FFEB3B', text: 'Unhealthy for Sensitive' },
+            unhealthy: { max: 150, color: '#FF9800', text: 'Unhealthy' },
+            veryUnhealthy: { max: 250, color: '#F44336', text: 'Very Unhealthy' },
+            hazardous: { max: 999, color: '#9C27B0', text: 'Hazardous' }
         };
 
         function getAirQualityStatus(pm25) {
@@ -268,15 +224,11 @@
         }
 
         function updateARDisplay() {
-            const pm1 = document.getElementById('pm1').value;
-            const pm25 = document.getElementById('pm25').value;
-            const pm10 = document.getElementById('pm10').value;
+            const status = getAirQualityStatus(currentData.pm25);
             
-            const status = getAirQualityStatus(parseFloat(pm25));
+            console.log('Updating AR display:', { ...currentData, status: status.text });
             
-            console.log('Updating AR display:', { pm1, pm25, pm10, status: status.text });
-            
-            // Update AR display elements with stable positioning
+            // Update AR display elements
             const elements = {
                 pm1Text: document.getElementById('pm1-text'),
                 pm25Text: document.getElementById('pm25-text'),
@@ -286,15 +238,15 @@
                 mainPanel: document.getElementById('main-panel')
             };
             
-            // Update text values with consistent formatting
+            // Update text values
             if (elements.pm1Text) {
-                elements.pm1Text.setAttribute('value', `PM1.0: ${pm1} μg/m³`);
+                elements.pm1Text.setAttribute('value', `PM1.0: ${currentData.pm1} μg/m³`);
             }
             if (elements.pm25Text) {
-                elements.pm25Text.setAttribute('value', `PM2.5: ${pm25} μg/m³`);
+                elements.pm25Text.setAttribute('value', `PM2.5: ${currentData.pm25} μg/m³`);
             }
             if (elements.pm10Text) {
-                elements.pm10Text.setAttribute('value', `PM10: ${pm10} μg/m³`);
+                elements.pm10Text.setAttribute('value', `PM10: ${currentData.pm10} μg/m³`);
             }
             if (elements.statusTextAr) {
                 elements.statusTextAr.setAttribute('value', status.text);
@@ -306,9 +258,8 @@
                 elements.mainPanel.setAttribute('color', status.color);
             }
             
-            // Update control panel status
-            document.getElementById('status-color').style.backgroundColor = status.color;
-            document.getElementById('status-text').textContent = status.text;
+            // Update control panel display
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
             
             // Animate particles based on air quality
             updateParticleAnimation(status);
@@ -339,34 +290,66 @@
             });
         }
 
+        // Firebase data fetching functions
+        function initializeFirebaseListeners() {
+            const sensorRef = database.ref('adddelete/Sensoradddelete');
+            
+            // Listen for data changes
+            sensorRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    console.log('Firebase data received:', data);
+                    
+                    // Update current data from Firebase
+                    // Note: Your Firebase has PM100_data, PM10_data, PM25_data
+                    currentData.pm1 = data.PM100_data || 0;
+                    currentData.pm25 = data.PM25_data || 0;
+                    currentData.pm10 = data.PM10_data || 0;
+                    
+                    document.getElementById('data-status').textContent = 'Live data received';
+                    updateARDisplay();
+                } else {
+                    console.log('No data available');
+                    document.getElementById('data-status').textContent = 'No data available';
+                }
+            });
+
+            // Handle connection state
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log('Connected to Firebase');
+                    firebaseConnected = true;
+                } else {
+                    console.log('Disconnected from Firebase');
+                    firebaseConnected = false;
+                }
+            });
+
+            // Handle errors
+            sensorRef.on('error', (error) => {
+                console.error('Firebase error:', error);
+                document.getElementById('data-status').textContent = 'Error: ' + error.message;
+            });
+        }
+
         // Wait for scene to load before initializing
         document.querySelector('a-scene').addEventListener('loaded', function() {
             console.log('A-Frame scene loaded');
+            initializeFirebaseListeners();
             setTimeout(updateARDisplay, 1000);
-            elementsCreated = true;
         });
 
-        // Handle input changes
-        document.getElementById('pm1').addEventListener('input', updateARDisplay);
-        document.getElementById('pm25').addEventListener('input', updateARDisplay);
-        document.getElementById('pm10').addEventListener('input', updateARDisplay);
+        // Initialize Firebase listeners immediately
+        initializeFirebaseListeners();
 
-        // Auto-update every 5 seconds with realistic sensor variation
+        // Fallback: Try to fetch data every 30 seconds if no real-time updates
         setInterval(() => {
-            const baseValues = {
-                pm1: parseFloat(document.getElementById('pm1').value),
-                pm25: parseFloat(document.getElementById('pm25').value),
-                pm10: parseFloat(document.getElementById('pm10').value)
-            };
-            
-            // Smaller, more realistic variations
-            const variation = 3; // ±3 μg/m³ variation
-            document.getElementById('pm1').value = Math.max(0, Math.round(baseValues.pm1 + (Math.random() - 0.5) * variation));
-            document.getElementById('pm25').value = Math.max(0, Math.round(baseValues.pm25 + (Math.random() - 0.5) * variation));
-            document.getElementById('pm10').value = Math.max(0, Math.round(baseValues.pm10 + (Math.random() - 0.5) * variation));
-            
-            updateARDisplay();
-        }, 5000);
+            if (!firebaseConnected) {
+                console.log('Attempting to reconnect to Firebase...');
+                initializeFirebaseListeners();
+            }
+        }, 30000);
 
         // Debug helper - log marker position info
         setInterval(() => {
