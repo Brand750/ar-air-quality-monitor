@@ -29,7 +29,6 @@
 </head>
 <body>
 
-
     <div class="debug-info">
         <div>Camera: <span id="camera-status">Loading...</span></div>
         <div>Marker: <span id="marker-status">Not detected</span></div>
@@ -204,14 +203,13 @@
                 console.error('Camera error:', err);
             });
 
-        // Air quality categories based on PM2.5 levels (WHO/EPA standards)
+        // Air quality categories based on your specified PM2.5 thresholds
         const airQualityLevels = {
-            good: { max: 12, color: '#4CAF50', text: 'Good' },
-            healthy: { max: 35, color: '#8BC34A', text: 'Moderate' },
-            moderate: { max: 55, color: '#FFEB3B', text: 'Unhealthy for Sensitive' },
-            unhealthy: { max: 150, color: '#FF9800', text: 'Unhealthy' },
-            veryUnhealthy: { max: 250, color: '#F44336', text: 'Very Unhealthy' },
-            hazardous: { max: 999, color: '#9C27B0', text: 'Hazardous' }
+            soGood: { max: 30, color: '#4CAF50', text: 'So Good' },
+            healthy: { max: 60, color: '#C1E8F4', text: 'Healthy' },
+            normal: { max: 90, color: '#FFDE59', text: 'Normal' },
+            veryUnhealthy: { max: 130, color: '#FF9800', text: 'Very Unhealthy' },
+            hazardous: { max: 999, color: '#931883', text: 'Hazardous' }
         };
 
         function getAirQualityStatus(pm25) {
@@ -258,18 +256,16 @@
                 elements.mainPanel.setAttribute('color', status.color);
             }
             
-            // Update control panel display
-            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
-            
             // Animate particles based on air quality
             updateParticleAnimation(status);
         }
 
         function updateParticleAnimation(status) {
             const particles = ['particle1', 'particle2', 'particle3'];
-            const intensity = status.text === 'Good' ? 0.3 : 
-                            status.text === 'Moderate' ? 0.5 : 
-                            status.text.includes('Unhealthy') ? 0.8 : 1.0;
+            const intensity = status.text === 'So Good' ? 0.3 : 
+                            status.text === 'Healthy' ? 0.4 :
+                            status.text === 'Normal' ? 0.6 : 
+                            status.text === 'Very Unhealthy' ? 0.8 : 1.0;
             
             particles.forEach((particleId) => {
                 const particle = document.getElementById(particleId);
@@ -292,21 +288,24 @@
 
         // Firebase data fetching functions
         function initializeFirebaseListeners() {
-            const sensorRef = database.ref('adddelete/Sensoradddelete');
+            // FIXED: Changed path to match your Firebase structure
+            const sensorRef = database.ref('Sensor');
             
             // Listen for data changes
             sensorRef.on('value', (snapshot) => {
                 const data = snapshot.val();
+                console.log('Raw Firebase data:', data);
+                
                 if (data) {
                     console.log('Firebase data received:', data);
                     
-                    // Update current data from Firebase
-                    // Note: Your Firebase has PM100_data, PM10_data, PM25_data
+                    // FIXED: Updated field mapping to match your Firebase structure
                     currentData.pm1 = data.PM100_data || 0;
                     currentData.pm25 = data.PM25_data || 0;
                     currentData.pm10 = data.PM10_data || 0;
                     
                     document.getElementById('data-status').textContent = 'Live data received';
+                    firebaseConnected = true;
                     updateARDisplay();
                 } else {
                     console.log('No data available');
@@ -319,10 +318,10 @@
             connectedRef.on('value', (snapshot) => {
                 if (snapshot.val() === true) {
                     console.log('Connected to Firebase');
-                    firebaseConnected = true;
+                    document.getElementById('data-status').textContent = 'Connected to Firebase';
                 } else {
                     console.log('Disconnected from Firebase');
-                    firebaseConnected = false;
+                    document.getElementById('data-status').textContent = 'Disconnected from Firebase';
                 }
             });
 
