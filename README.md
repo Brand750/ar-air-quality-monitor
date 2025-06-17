@@ -53,6 +53,9 @@ The system uses the standard Hiro marker for AR tracking. You can:
 - Display it on another screen
 - Use any Hiro marker available online
 
+![image](https://github.com/user-attachments/assets/a19c2f0d-bc8f-4c8f-93f2-a55ac03ed045)
+
+
 ### Real-time Data Flow
 1. **Sensor Reading**: ESP32 reads data from PMS5003 every second
 2. **Local Display**: Data shown on OLED screen
