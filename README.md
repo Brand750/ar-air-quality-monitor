@@ -65,6 +65,7 @@ Each air quality level provides a unique AR experience:
 - **Dynamic Color Coding**: Background colors change based on air quality
 - **Real-time Values**: Live numerical data for all particle sizes
 - **Health Information**: Contextual health warnings and recommendations
+
 ![Screenshot 2025-05-30 161048](https://github.com/user-attachments/assets/affd01c2-8298-4a66-8032-18fd36747b8e)
 ![Screenshot 2025-05-30 161007](https://github.com/user-attachments/assets/1f612948-21ba-47c3-b9b4-53e56d93813d)
 ![Screenshot 2025-05-30 161609](https://github.com/user-attachments/assets/bc04a516-971d-411d-9141-d3f1644360d6)
